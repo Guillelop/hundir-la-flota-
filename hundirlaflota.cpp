@@ -1,141 +1,94 @@
 #include <iostream>
-#include <cstring>
+#include <cstdlib>
+#include <ctime>
+
 using namespace std;
 
-const int BOARD_SIZE = 10;
-const char SHIP_SYMBOL = 'S';
-const char HIT_SYMBOL = 'X';
-const char MISS_SYMBOL = 'O';
+const int FILAS = 8;
+const int COLUMNAS = 8;
 
-// Estructura que representa una coordenada en el tablero
-struct Coordinate {
-    int row;
-    int col;
-};
-
-// Estructura que representa un barco en el tablero
-struct Ship {
-    char symbol; // Símbolo que se mostrará en el tablero para representar al barco
-    int size; // Tamaño del barco
-    Coordinate position; // Coordenada de la casilla del barco que está más a la izquierda o más arriba
-    bool vertical; // true si el barco está en posición vertical, false si está en posición horizontal
-    bool destroyed; // true si el barco ha sido destruido, false si no
-};
-
-// Función que inicializa el tablero con agua
-void initBoard(char board[][BOARD_SIZE]) {
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            board[i][j] = '~';
+void inicializarTablero(int tablero[FILAS][COLUMNAS]){
+    for(int i = 0; i < FILAS; i++){
+        for(int j = 0; j < COLUMNAS; j++){
+            tablero[i][j] = 0;
         }
     }
 }
 
-// Función que muestra el tablero en la consola
-void printBoard(char board[][BOARD_SIZE]) {
-    cout << "  ";
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        cout << i << " ";
+void colocarBarcos(int tablero[FILAS][COLUMNAS]){
+    srand(time(NULL));
+    int fila, columna;
+    for(int i = 0; i < 8; i++){
+        do{
+            fila = rand() % FILAS;
+            columna = rand() % COLUMNAS;
+        } while(tablero[fila][columna] != 0);
+        tablero[fila][columna] = 1;
     }
+}
+
+void mostrarTablero(int tablero[FILAS][COLUMNAS]){
     cout << endl;
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        cout << char('A' + i) << " ";
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            cout << board[i][j] << " ";
+    cout << "\t1 \t2 \t3 \t4 \t5 \t6 \t7 \t8" << endl;
+    cout << endl;
+    for(int i = 0; i < FILAS; i++){
+        cout << i+1 << "\t";
+        for(int j = 0; j < COLUMNAS; j++){
+            if(tablero[i][j] == 0){
+                cout << "~\t";
+            } else if(tablero[i][j] == 1){
+                cout << "*\t";
+            } else if(tablero[i][j] == 8){
+                cout << "O\t";
+            } else {
+                cout << "X\t";
+            }
         }
         cout << endl;
     }
+    cout << endl;
 }
 
-// Función que coloca un barco en el tablero
-void placeShip(char board[][BOARD_SIZE], Ship ship) {
-    int row = ship.position.row;
-    int col = ship.position.col;
-    for (int i = 0; i < ship.size; i++) {
-        board[row][col] = ship.symbol;
-        if (ship.vertical) {
-            row++;
-        } else {
-            col++;
-        }
-    }
-}
-
-// Función que valida si un barco puede ser colocado en una posición dada
-bool canPlaceShip(char board[][BOARD_SIZE], Ship ship) {
-    int row = ship.position.row;
-    int col = ship.position.col;
-    for (int i = 0; i < ship.size; i++) {
-        if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE || board[row][col] != '~') {
-            return false;
-        }
-        if (ship.vertical) {
-            row++;
-        } else {
-            col++;
-        }
-    }
-    return true;
-}
-
-// Función que pide al usuario las coordenadas donde quiere atacar
-Coordinate getAttackCoordinates() {
-    Coordinate c;
-    cout << "Introduce las coordenadas de tu ataque (fila columna): ";
-    cin >> c.row >> c.col;
-    c.row--; // Restamos 1 para que el índice de la fila empiece en 0
-    c.col--;
-    return c;
-}
-
-// Función que actualiza el tablero después de un ataque
-void attack(char board[][BOARD_SIZE], Ship ships[], int numShips, Coordinate c) {
-    if (board[c.row][c.col] == SHIP_SYMBOL) {
-        board[c.row][c.col] = HIT_SYMBOL;
-        for (int i = 0; i < numShips; i++) {
-            if (ships[i].position.row == c.row && ships[i].position.col == c.col) {
-                ships[i].destroyed = true;
-                cout << "¡Has hundido un barco!" << endl;
-                break;
-            }
-        }
+bool disparar(int tablero[FILAS][COLUMNAS], int &aciertos){
+    int fila, columna;
+    cout << "Introduce una fila: ";
+    cin >> fila;
+    cout << "Introduce una columna: ";
+    cin >> columna;
+    fila--;
+    columna--;
+    if(tablero[fila][columna] == 0){
+        cout << "\t\tAgua" << endl;
+        tablero[fila][columna] = 8;
+        return false;
+    } else if(tablero[fila][columna] == 1){
+        cout << "\t\t¡Acertaste!" << endl;
+        tablero[fila][columna] = 9;
+        aciertos++;
+        return true;
     } else {
-        board[c.row][c.col] = MISS_SYMBOL;
-        cout << "¡Has fallado!" << endl;
+        cout << "\t\tYa habías disparado ahí" << endl;
+        return false;
     }
 }
 
-// Función que valida si todos los barcos han sido destruidos
-bool allShipsDestroyed(Ship ships[], int numShips) {
-    for (int i = 0; i < numShips; i++) {
-        if (!ships[i].destroyed) {
-            return false;
+int main(){
+    int tablero[FILAS][COLUMNAS];
+    int aciertos = 0;
+    int intentos = 0;
+    bool quedanBarcos = true;
+    inicializarTablero(tablero);
+    colocarBarcos(tablero);
+    cout << "\t¡Bienvenido a Hundir la Flota!" << endl;
+    while(quedanBarcos){
+        mostrarTablero(tablero);
+        bool acierto = disparar(tablero, aciertos);
+        if(aciertos == 8){
+            quedanBarcos = false;
+            cout << "¡Ganaste! Has hundido todos los barcos en " << intentos+1 << " intentos." << endl;
+        } else {
+            intentos++;
         }
     }
-    return true;
-}
-
-// Programa principal
-int main() {
-    char board[BOARD_SIZE][BOARD_SIZE];
-    Ship ships[] = {
-        {'C', 5, {0, 0}, true, false},
-        {'B', 4, {2, 3}, false, false},
-        {'D', 3, {4, 6}, true, false},
-        {'S', 3, {8, 1}, false, false},
-        {'P', 2, {6, 4}, true, false}
-    };
-    int numShips = sizeof(ships) / sizeof(ships[0]);
-    
-    initBoard(board);
-    for (int i = 0; i < numShips; i++) {
-        while (!canPlaceShip(board, ships[i])) {
-            ships[i].position.row = rand() % BOARD_SIZE;
-            ships[i].position.col = rand() % BOARD_SIZE;
-}
-placeShip(board, &ships[i]);
-}
-playGame(board, ships, numShips);
-
-return 0;
+    return 0;
 }
